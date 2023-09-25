@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="http_Listener_Config" doc:name="HTTP Listener config" doc:id="23f5a426-be99-4399-bf3d-ab4a2d37821b" >
+		<http:listener-connection host="0.0.0.0" port="8083" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="4b3ba390-2958-444c-a243-87fe360ffd3d" >
+		<db:oracle-connection host="localhost" user="system" password="system" serviceName="xe" />
+	</db:config>
+	<flow name="flightino" doc:id="0b14e55c-df85-49e8-911b-b3f9b505fb62" >
+		<http:listener doc:name="Listener" doc:id="5e5f15f9-fc97-43d0-852d-9f63417c9662" config-ref="http_Listener_Config" path="/walthrough"/>
+		<set-payload value="Flight info" doc:name="Set Payload" doc:id="97eb2a68-0be5-49a8-8a17-595135994d56" />
+		<db:select doc:id="d1be7f2e-002b-4ece-8881-3cbc023aecba" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from AMERICAN_FLIGHTS]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="cb6d6fdd-8094-476a-89fe-8d917bc1d679" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	ID: payload01.ID default 0,
+	code: payload01.CODE default "",
+	price: payload01.PRICE default 0,
+	departureDate: payload01.DEPARTUREDATE as String default "",
+	origin: lower ( payload01.ORIGIN default "" ),
+	destination: payload01.DESTINATION default "",
+	emptySeats: payload01.EMPTYSEATS default 0,
+	plane: {
+		"type": payload01.PLANE_TYPE default "",
+		totalSeats: payload01.PLANE_TT_SEAT default 0
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
